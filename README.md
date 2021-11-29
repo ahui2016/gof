@@ -15,7 +15,13 @@ $ go install github.com/ahui2016/go-rename@latest
 本仓库的源代码里提供了一个 example 文件夹，下载到本地后在 example 文件夹里执行以下命令可试验是否安装成功：
 
 ```
-$ go-rename -f test.yaml
+$ go-rename -f go-rename.yaml
+```
+
+如果在当前文件夹里有一个 go-rename.yaml 文件, 则可以省略 `-f` 参数。
+
+```
+$ go-rename
 ```
 
 ## 关于 go install 和 GOBIN
