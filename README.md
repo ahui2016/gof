@@ -9,11 +9,26 @@
 配置好 Go 语言环境后，执行以下命令：
 
 ```
-$ go install github.com/ahui2016/go-rename
+$ go install github.com/ahui2016/go-rename@latest
 ```
 
 本仓库的源代码里提供了一个 example 文件夹，下载到本地后在 example 文件夹里执行以下命令可试验是否安装成功：
 
 ```
 $ go-rename -f test.yaml
+```
+
+## 关于 go install 和 GOBIN
+
+如果设置了 GOBIN, 那么程序会被安装在 GOBIN 里，需要手动添加目录到环境变量中。
+GOBIN 的具体位置可以用以下命令查看：
+
+```
+$ go env GOBIN
+```
+
+如果未设置 GOBIN, 请查看 go install 的帮助信息：
+
+```
+$ go help install
 ```
