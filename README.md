@@ -12,7 +12,7 @@
 $ go install github.com/ahui2016/go-rename@latest
 ```
 
-本仓库的源代码里提供了一个 example 文件夹，下载到本地后在 example 文件夹里执行以下命令可试验是否安装成功：
+本仓库的源代码里提供了一个 examples 文件夹，下载到本地后在 examples 的各个子文件夹里执行以下命令可试验是否安装成功：
 
 ```
 $ go-rename -f go-rename.yaml
@@ -38,3 +38,14 @@ $ go env GOBIN
 ```
 $ go help install
 ```
+
+## 添加扩展
+
+本程序采用了很容易添加扩展的设计，添加一个扩展的步骤如下：
+
+1. fork 本仓库以方便修改
+2. 在 recipes 文件夹里新建一个 `.go` 文件，第一行内容为 `package recipes`, 在该文件中定义一个 struct 并使其实现 Recipe 接口（参考 recipes 文件夹中已有的文件）
+3. 在 main.go 里注册需要用到的 recipe
+4. 不是必须，但建议在 examples 文件夹里添加用于测试的文件
+
+完成。

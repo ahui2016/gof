@@ -1,0 +1,7 @@
+all-tasks:
+- recipe: swap    # 需要先在 main.go 中注册
+  options:        # options 是 map[string]string
+    verbose: yes  # yes/no, 显示或不显示程序执行过程中的提示信息
+  names:          # file names
+  - test1.txt
+  - test2.txt

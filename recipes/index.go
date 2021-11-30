@@ -1,5 +1,7 @@
 package recipes
 
+import "fmt"
+
 type Recipe interface {
 	// the name of this recipe
 	Name() string
@@ -14,6 +16,15 @@ type Recipe interface {
 	Exec() error
 }
 
-var Recipes = map[string]Recipe{
-	"swap": new(Swap),
+var Get = make(map[string]Recipe)
+
+func Register(recipes ...Recipe) error {
+	for _, recipe := range recipes {
+		_, ok := Get[recipe.Name()]
+		if ok {
+			return fmt.Errorf("%s already exists", recipe.Name())
+		}
+		Get[recipe.Name()] = recipe
+	}
+	return nil
 }
