@@ -23,7 +23,7 @@ a file/folder processor written in Go
 
 配置好 Go 语言环境后，执行以下命令：
 ```
-$ go install github.com/ahui2016/gof@latest
+$ go install github.com/ahui2016/gof@v0.1.0
 ```
 
 如果有网络问题，请设置 goproxy：

@@ -21,11 +21,15 @@ func initRecipes() error {
 	)
 }
 
+const gofVer = "v0.1.0"
+
 const defaultConfigFileName = "gof.yaml"
 
 var tasks model.Tasks
 
 var (
+	showVer = flag.Bool("v", false, "the version of gof")
+
 	// YAML 文件名
 	config = flag.String("f", "", "use a YAML config file")
 
@@ -46,6 +50,11 @@ func init() {
 func initFlag() {
 	flag.Parse()
 	names = flag.Args()
+
+	// 如果有 "-v", 则显示 gof 的版本，并且忽略其它参数，不执行任何操作。
+	if *showVer {
+		return
+	}
 
 	// 如果命令行指定了 recipe 名称，则不需要 YAML 文件
 	if *recipe != "" {
@@ -84,6 +93,11 @@ func initFlag() {
 }
 
 func main() {
+	// 如果有 "-v", 则显示 gof 的版本，并且忽略其它参数，不执行任何操作。
+	if *showVer {
+		fmt.Printf("gof %s", gofVer)
+		return
+	}
 	if *dump {
 		util.Panic(printDump(tasks))
 		return
