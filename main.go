@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -22,25 +23,24 @@ func initRecipes() error {
 
 const defaultConfigFileName = "gof.yaml"
 
-var (
-	tasks      model.Tasks
-	useDefault bool
-)
+var tasks model.Tasks
 
 var (
 	// YAML 文件名
-	config = flag.String("f", "", "a YAML config file")
+	config = flag.String("f", "", "use a YAML config file")
 
 	// -r 的优先级高于 -f (即，如果指定了 -r, 就忽略 -f)
 	recipe = flag.String("r", "", "use a recipe with default options")
+
+	dump = flag.Bool("dump", false, "do not run tasks, but print messages")
 
 	// filenames, 优先级高于 YAML 文件里的 names
 	names []string
 )
 
 func init() {
-	initFlag()
 	util.Panic(initRecipes())
+	initFlag()
 }
 
 func initFlag() {
@@ -49,10 +49,14 @@ func initFlag() {
 
 	// 如果命令行指定了 recipe 名称，则不需要 YAML 文件
 	if *recipe != "" {
-		useDefault = true
+		v, ok := recipes.Get[*recipe]
+		if !ok {
+			log.Fatalf("not found recipe: %s", *recipe)
+		}
 		tasks = model.Tasks{AllTasks: []model.Task{{
-			Recipe: *recipe,
-			Names:  names,
+			Recipe:  *recipe,
+			Options: v.Default(),
+			Names:   names,
 		}}}
 	} else {
 		// 如果命令行未指定 recipe, 则需要一个 YAML 文件，
@@ -80,7 +84,20 @@ func initFlag() {
 }
 
 func main() {
-	if err := tasks.ExecAll(useDefault); err != nil {
+	if *dump {
+		util.Panic(printDump(tasks))
+		return
+	}
+	if err := tasks.ExecAll(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func printDump(in interface{}) error {
+	blob, err := yaml.Marshal(&in)
+	if err != nil {
+		return err
+	}
+	fmt.Print(string(blob))
+	return nil
 }

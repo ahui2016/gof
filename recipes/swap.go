@@ -21,7 +21,9 @@ const swap_suffix = "1"
 // swap_limit 限制最多可连续添加多少次 suffix，避免文件名无限变长。
 const swap_limit = 20
 
-// Swap 实现了 Recipe 接口
+// Swap 实现了 Recipe 接口，用于对调两个文件的文件名。
+// Swap 只能用于不需要移动文件的情况，比如同一个文件夹（或同一个硬盘分区）内的文件可以操作，
+// 而跨硬盘分区的文件则无法处理。
 type Swap struct {
 	names   []string
 	verbose bool
@@ -41,11 +43,8 @@ func (s *Swap) Default() map[string]string {
 	}
 }
 
-func (s *Swap) Prepare(names []string, options map[string]string, useDefault bool) {
+func (s *Swap) Prepare(names []string, options map[string]string) {
 	s.names = names
-	if useDefault {
-		options = s.Default()
-	}
 	if options["verbose"] == "yes" {
 		s.verbose = true
 	}

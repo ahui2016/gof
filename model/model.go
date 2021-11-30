@@ -17,7 +17,7 @@ type Tasks struct {
 	AllTasks []Task `yaml:"all-tasks"`
 }
 
-func (all Tasks) ExecAll(useDefault bool) error {
+func (all Tasks) ExecAll() error {
 	if len(all.AllTasks) == 0 {
 		return fmt.Errorf("no task")
 	}
@@ -27,7 +27,7 @@ func (all Tasks) ExecAll(useDefault bool) error {
 			return fmt.Errorf("not found recipe: %s", task.Recipe)
 		}
 		recipe.Refresh()
-		recipe.Prepare(task.Names, task.Options, useDefault)
+		recipe.Prepare(task.Names, task.Options)
 		if err := recipe.Validate(); err != nil {
 			return err
 		}
