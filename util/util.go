@@ -1,6 +1,10 @@
 package util
 
-import "os"
+import (
+	"errors"
+	"io/fs"
+	"os"
+)
 
 // Panic panics if err != nil
 func Panic(err error) {
@@ -12,7 +16,7 @@ func Panic(err error) {
 // PathIsNotExist 找不到名为 name 的文件时返回 true, 否则返回 false
 func PathIsNotExist(name string) (ok bool, err error) {
 	_, err = os.Lstat(name)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		ok = true
 		err = nil
 	}

@@ -3,11 +3,18 @@ package recipes
 import "fmt"
 
 type Recipe interface {
+
 	// the name of this recipe
 	Name() string
 
+	// 清空数据，确保每次被调用的 Recipe 都是全新的，未被污染的。
+	Refresh()
+
+	// Default 返回默认的 options
+	Default() map[string]string
+
 	// 在 Prepare 里进行一些初始化，为后续的 Validate 和 Exec 做准备。
-	Prepare(names []string, options map[string]string)
+	Prepare(names []string, options map[string]string, useDefault bool)
 
 	// 必须先执行 Prepare 然后才执行 Validate
 	Validate() error

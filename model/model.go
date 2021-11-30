@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/ahui2016/go-rename/recipes"
+	"github.com/ahui2016/gof/recipes"
 )
 
 type Task struct {
@@ -17,7 +17,7 @@ type Tasks struct {
 	AllTasks []Task `yaml:"all-tasks"`
 }
 
-func (all Tasks) ExecAll() error {
+func (all Tasks) ExecAll(useDefault bool) error {
 	if len(all.AllTasks) == 0 {
 		return fmt.Errorf("no task")
 	}
@@ -26,7 +26,8 @@ func (all Tasks) ExecAll() error {
 		if !ok {
 			return fmt.Errorf("not found recipe: %s", task.Recipe)
 		}
-		recipe.Prepare(task.Names, task.Options)
+		recipe.Refresh()
+		recipe.Prepare(task.Names, task.Options, useDefault)
 		if err := recipe.Validate(); err != nil {
 			return err
 		}

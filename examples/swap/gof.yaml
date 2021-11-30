@@ -1,0 +1,30 @@
+# 可以添加多个任务（可以是不同的 recipe），将会按顺序依次执行。
+all-tasks:
+
+# 第一个任务
+- recipe: swap    # 需要先在 main.go 中注册
+  options:        # options 是 map[string]string
+    verbose: yes  # yes/no, 显示或不显示程序执行的详细过程
+  names:          # file names
+  - file1.txt
+  - file2.txt
+
+# 第二个任务
+- recipe: swap    
+  options:        
+    verbose: no  # 第二个任务不显示详细过程
+  names:          
+  - file2.txt
+  - file3.txt
+
+# 以上两个任务执行前，假设内容是
+#    file1.txt 的内容是 111
+#    file2.txt 的内容是 222
+#    file3.txt 的内容是 333
+
+# 以上两个任务执行后，应该变成
+#    file1.txt 的内容是 222
+#    file2.txt 的内容是 333
+#    file3.txt 的内容是 111
+
+# 当然，如果再执行一次，内容会再次调换。

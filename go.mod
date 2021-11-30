@@ -1,4 +1,4 @@
-module github.com/ahui2016/go-rename
+module github.com/ahui2016/gof
 
 go 1.17
 

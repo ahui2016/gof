@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ahui2016/go-rename/util"
+	"github.com/ahui2016/gof/util"
 )
 
 /*
@@ -31,8 +31,21 @@ func (s *Swap) Name() string {
 	return "swap"
 }
 
-func (s *Swap) Prepare(names []string, options map[string]string) {
+func (s *Swap) Refresh() {
+	*s = *new(Swap)
+}
+
+func (s *Swap) Default() map[string]string {
+	return map[string]string{
+		"verbose": "yes",
+	}
+}
+
+func (s *Swap) Prepare(names []string, options map[string]string, useDefault bool) {
 	s.names = names
+	if useDefault {
+		options = s.Default()
+	}
 	if options["verbose"] == "yes" {
 		s.verbose = true
 	}
@@ -40,6 +53,7 @@ func (s *Swap) Prepare(names []string, options map[string]string) {
 
 func (s *Swap) Validate() error {
 	if len(s.names) != 2 {
+		log.Print("filenames: ", s.names)
 		return fmt.Errorf("%s: needs two filenames", s.Name())
 	}
 	s.names[0] = strings.TrimSpace(s.names[0])
@@ -60,22 +74,22 @@ func (s *Swap) Exec() error {
 	}
 
 	if s.verbose {
-		log.Printf("found a safe temp filename: %s", temp)
-		log.Printf("rename %s to %s", s.names[0], temp)
+		log.Printf("-- found a safe temp filename: %s", temp)
+		log.Printf("-- rename %s to %s", s.names[0], temp)
 	}
 	if err := os.Rename(s.names[0], temp); err != nil {
 		return err
 	}
 
 	if s.verbose {
-		log.Printf("rename %s to %s", s.names[1], s.names[0])
+		log.Printf("-- rename %s to %s", s.names[1], s.names[0])
 	}
 	if err := os.Rename(s.names[1], s.names[0]); err != nil {
 		return err
 	}
 
 	if s.verbose {
-		log.Printf("rename %s to %s", temp, s.names[1])
+		log.Printf("-- rename %s to %s", temp, s.names[1])
 	}
 	if err := os.Rename(temp, s.names[1]); err != nil {
 		return err
