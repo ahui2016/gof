@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/ahui2016/gof/util"
 )
@@ -45,20 +44,16 @@ func (s *Swap) Default() map[string]string {
 
 func (s *Swap) Prepare(names []string, options map[string]string) {
 	s.names = names
-	if options["verbose"] == "yes" {
-		s.verbose = true
-	}
+	s.verbose = options["verbose"] == "yes"
 }
 
 func (s *Swap) Validate() error {
+	s.names = util.StrSliceFilter(s.names, func(name string) bool {
+		return name != ""
+	})
 	if len(s.names) != 2 {
 		log.Print("filenames: ", s.names)
 		return fmt.Errorf("%s: needs two filenames", s.Name())
-	}
-	s.names[0] = strings.TrimSpace(s.names[0])
-	s.names[1] = strings.TrimSpace(s.names[1])
-	if s.names[0] == "" || s.names[1] == "" {
-		return fmt.Errorf("filename cannot be empty")
 	}
 	return nil
 }

@@ -28,3 +28,12 @@ func PathIsExist(name string) (bool, error) {
 	ok, err := PathIsNotExist(name)
 	return !ok, err
 }
+
+func StrSliceFilter(arr []string, test func(string) bool) (result []string) {
+	for _, s := range arr {
+		if test(s) {
+			result = append(result, s)
+		}
+	}
+	return
+}
