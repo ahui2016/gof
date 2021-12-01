@@ -19,7 +19,9 @@ type Tasks struct {
 	AllTasks []Task   `yaml:"all-tasks"`
 }
 
-func (all Tasks) ExecAll() error {
+// ExecAll 当 realRun == true 时依次执行每个任务；
+// 而当 realRun == false 时则只是依次检查每个任务，不会真的执行。
+func (all Tasks) ExecAll(realRun bool) error {
 	if len(all.AllTasks) == 0 {
 		return fmt.Errorf("no task")
 	}
@@ -36,10 +38,16 @@ func (all Tasks) ExecAll() error {
 		if err := recipe.Validate(); err != nil {
 			return err
 		}
-		if err := recipe.Exec(); err != nil {
-			return err
+		if realRun {
+			if err := recipe.Exec(); err != nil {
+				return err
+			}
 		}
 	}
-	log.Print("all tasks are finished.")
+	if realRun {
+		log.Print("all tasks are finished.")
+	} else {
+		log.Print("all tasks are validated.")
+	}
 	return nil
 }

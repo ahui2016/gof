@@ -106,9 +106,8 @@ func main() {
 	}
 	if *dump {
 		util.Panic(printDump(tasks))
-		return
 	}
-	if err := tasks.ExecAll(); err != nil {
+	if err := tasks.ExecAll(!*dump); err != nil {
 		log.Fatal(err)
 	}
 }
