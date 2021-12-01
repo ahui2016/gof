@@ -84,10 +84,15 @@ func initFlag() {
 		util.Panic(yaml.Unmarshal(tasksFile, &tasks))
 	}
 
-	// 如果命令行输入了文件名，则用来覆盖 YAML 文件里的全部文件名
+	// 命令行输入的文件名的优先级比 tasks.Namse 更高。
 	if len(names) > 0 {
+		tasks.Names = names
+	}
+
+	// tasks.Names 的优先级比单个 task 里的 Names 更高。
+	if len(tasks.Names) > 0 {
 		for i := range tasks.AllTasks {
-			tasks.AllTasks[i].Names = names
+			tasks.AllTasks[i].Names = nil
 		}
 	}
 }
@@ -95,7 +100,8 @@ func initFlag() {
 func main() {
 	// 如果有 "-v", 则显示 gof 的版本，并且忽略其它参数，不执行任何操作。
 	if *showVer {
-		fmt.Printf("gof %s", gofVer)
+		fmt.Printf("gof %s\n", gofVer)
+		fmt.Println("source code: https://github.com/ahui2016/gof")
 		return
 	}
 	if *dump {

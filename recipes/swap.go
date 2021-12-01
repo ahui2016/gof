@@ -12,7 +12,7 @@ import (
 
 /*
  * 建议每个 Recipe 独立一个文件，并且其常量和函数都添加前缀，
- * 因为全部 Recipe 都在 package recipes 里面，要避免冲突。
+ * 因为全部 recipe 都在 package recipes 里面，要避免冲突。
  */
 
 // swap_suffix 是用于临时文件名的后缀。

@@ -10,11 +10,13 @@ import (
 type Task struct {
 	Recipe  string
 	Options map[string]string
-	Names   []string
+	Names   []string // file/folder names
 }
 
 type Tasks struct {
-	AllTasks []Task `yaml:"all-tasks"`
+	// file/folder names, 优先级比 Task 里的 Names 更高。
+	Names    []string `yaml:"global-names"`
+	AllTasks []Task   `yaml:"all-tasks"`
 }
 
 func (all Tasks) ExecAll() error {
@@ -25,6 +27,9 @@ func (all Tasks) ExecAll() error {
 		recipe, ok := recipes.Get[task.Recipe]
 		if !ok {
 			return fmt.Errorf("not found recipe: %s", task.Recipe)
+		}
+		if len(all.Names) > 0 {
+			task.Names = all.Names
 		}
 		recipe.Refresh()
 		recipe.Prepare(task.Names, task.Options)
