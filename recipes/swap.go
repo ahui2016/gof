@@ -55,6 +55,11 @@ func (s *Swap) Validate() error {
 		log.Print("filenames: ", s.names)
 		return fmt.Errorf("%s: needs two filenames", s.Name())
 	}
+	for i := range s.names {
+		if err := util.FindFile(s.names[i]); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

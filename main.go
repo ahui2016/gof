@@ -17,6 +17,7 @@ import (
 func initRecipes() error {
 	return recipes.Register(
 		new(recipes.Swap),
+		new(recipes.OneWaySync),
 	// 在这里添加 recipe
 	)
 }
