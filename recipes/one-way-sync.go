@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
+	"time"
 
 	"github.com/ahui2016/gof/util"
 )
@@ -60,6 +60,13 @@ func (o *OneWaySync) Prepare(names []string, options map[string]string) {
 }
 
 func (o *OneWaySync) Validate() error {
+	if !o.add && !o.update && !o.delete {
+		log.Println("warning: add/update/delete are all set to false, nothing will be sync'ed.")
+	}
+	if !o.byDate && !o.byContent {
+		return fmt.Errorf("by-date and by-content are all set to false, nothing to be compare")
+	}
+
 	// 清除空字符串
 	o.names = util.StrSliceFilter(o.names, func(name string) bool {
 		return name != ""
@@ -94,40 +101,64 @@ func (o *OneWaySync) Validate() error {
 }
 
 func (o *OneWaySync) Exec() error {
-	if runtime.GOOS == "windows" {
-		for _, srcName := range o.srcFiles {
-			if err := walk(srcName); err != nil {
-				return err
-			}
-		}
-	} else {
-		for _, srcName := range o.srcFiles {
-			info, err := os.Stat(o.srcFiles[0])
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				if err := walk(srcName); err != nil {
-					return err
-				}
-			} else {
-				fmt.Printf("visited file: %q\n", srcName)
-			}
+	for _, srcName := range o.srcFiles {
+		if err := walk(srcName, o); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func walk(root string) error {
-	return filepath.WalkDir(root, func(name string, info fs.DirEntry, err error) error {
+func walk(srcRoot string, o *OneWaySync) error {
+	return filepath.WalkDir(srcRoot, func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			log.Print("Error in WalkDir")
 			return err
 		}
-		if info.IsDir() {
+
+		// file 与 folder 都要用到的变量
+		srcBase := filepath.Base(name)
+		targetPath := filepath.Join(o.targetDir, srcBase)
+		notExists, err := util.PathIsNotExist(targetPath)
+		if err != nil {
+			return err
+		}
+
+		// 如果是文件夹
+		if entry.IsDir() {
 			fmt.Printf("visited dir: %q\n", name)
-		} else {
-			fmt.Printf("visited file: %q\n", name)
+			if notExists {
+				fmt.Printf("os.Mkdir(%s, %o)\n", targetPath, os.ModePerm)
+				// if err := os.Mkdir(targetPath, info.Type()); err != nil {
+				// 	return err
+				// }
+			}
+			return nil
+		}
+
+		// 如果是文件
+		fmt.Printf("visited file: %q\n", name)
+
+		// 新增文件
+		if notExists {
+			fmt.Printf("os.Create(%s)\n", targetPath)
+			// f, err := os.Create(targetPath)
+			return nil
+		}
+
+		// 更新文件
+		if o.byDate {
+			srcInfo, err := entry.Info()
+			if err != nil {
+				return err
+			}
+			destInfo, err := os.Lstat(targetPath)
+			if err != nil {
+				return err
+			}
+			srcTime := srcInfo.ModTime().Format(time.RFC3339)
+			destTime := destInfo.ModTime().Format(time.RFC3339)
+			fmt.Printf("src-date: %s, dest-date: %s", srcTime, destTime)
 		}
 		return nil
 	})
