@@ -5,7 +5,7 @@ all-tasks:
 - recipe: swap    # 需要先在 main.go 中注册
   options:        # options 是 map[string]string
     verbose: yes  # yes/no, 显示或不显示程序执行的详细过程
-  names:          # names or paths of files/folders
+  names:          # 不多不少两个 files/folders
   - file1.txt
   - file2.txt
 

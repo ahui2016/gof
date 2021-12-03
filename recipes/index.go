@@ -4,9 +4,14 @@ import "fmt"
 
 type Recipe interface {
 
-	// the name of this recipe.
+	// Name of this recipe.
 	// 注意，应返回一个便于命令行输入的名字，比如中间不要有空格。
 	Name() string
+
+	// Help messages.
+	// 方便在命令行查看每个 recipe 的用途。如果没有写清楚，使用者（包括一段时间之后的作者自己）
+	// 就需要查看源文件才能知道具体使用方法了。通常用一个带注释的 YAML 文件即可，例子可参考项目自带的 recipe.
+	Help() string
 
 	// 清空数据，确保每次被调用的 Recipe 都是全新的，未被污染的。
 	Refresh()

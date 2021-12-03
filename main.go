@@ -36,6 +36,8 @@ var (
 
 	// -r 的优先级高于 -f (即，如果指定了 -r, 就忽略 -f)
 	recipe = flag.String("r", "", "use a recipe with default options")
+	help   = flag.Bool("help", false, "print a brief overview of a recipe")
+	list   = flag.Bool("list", false, "print out all registered recipes")
 
 	dump = flag.Bool("dump", false, "do not run tasks, but print messages")
 
@@ -52,17 +54,14 @@ func initFlag() {
 	flag.Parse()
 	names = flag.Args()
 
-	// 如果有 "-v", 则显示 gof 的版本，并且忽略其它参数，不执行任何操作。
-	if *showVer {
+	// 如果有 "-v" 或 "-list" 或 "-help", 则显示相关信息，并且忽略其它参数，不执行任何操作。
+	if *showVer || *list {
 		return
 	}
 
 	// 如果命令行指定了 recipe 名称，则不需要 YAML 文件
 	if *recipe != "" {
-		v, ok := recipes.Get[*recipe]
-		if !ok {
-			log.Fatalf("not found recipe: %s", *recipe)
-		}
+		v := getRecipe(*recipe)
 		tasks = model.Tasks{AllTasks: []model.Task{{
 			Recipe:  *recipe,
 			Options: v.Default(),
@@ -99,12 +98,34 @@ func initFlag() {
 }
 
 func main() {
-	// 如果有 "-v", 则显示 gof 的版本，并且忽略其它参数，不执行任何操作。
+	// 如果有 "-v" 或 "-list" 或 "-help", 则显示相关信息，并且忽略其它参数，不执行任何操作。
 	if *showVer {
 		fmt.Printf("gof %s\n", gofVer)
 		fmt.Println("source code: https://github.com/ahui2016/gof")
 		return
 	}
+	if *list {
+		recipesNames := []string{}
+		for k := range recipes.Get {
+			recipesNames = append(recipesNames, k)
+		}
+		fmt.Print("registered recipes: ")
+		fmt.Print(strings.Join(recipesNames, ", "))
+		fmt.Println()
+		return
+	}
+	if *help {
+		if *recipe == "" {
+			fmt.Println("-help: print a brief overview of a recipe")
+			fmt.Println("use -r to specify a recipe, for example: gof -help -r swap")
+			fmt.Println("use -list to list out all registered recipes")
+		} else {
+			v := getRecipe(*recipe)
+			fmt.Println(v.Help())
+		}
+		return
+	}
+
 	if *dump {
 		util.Panic(printDump(tasks))
 	}
@@ -120,4 +141,12 @@ func printDump(in interface{}) error {
 	}
 	fmt.Print(string(blob))
 	return nil
+}
+
+func getRecipe(name string) recipes.Recipe {
+	v, ok := recipes.Get[*recipe]
+	if !ok {
+		log.Fatalf("not found recipe: %s\nuse -list to list out all registered recipes", *recipe)
+	}
+	return v
 }

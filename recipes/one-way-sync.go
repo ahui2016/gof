@@ -33,6 +33,23 @@ func (o *OneWaySync) Name() string {
 	return "one-way-sync"
 }
 
+func (o *OneWaySync) Help() string {
+	return `
+- recipe: one-way-sync # 单向同步
+  options:
+    dry-run: "yes"     # 设为 yes 时只显示信息；设为 no 时才会实际执行
+    add: "yes"         # 是否添加文件
+    update: "yes"      # 是否更新文件
+    delete: "no"       # 是否删除文件
+    by-date: "yes"     # 是否对比文件的修改日期
+    by-content: "yes"  # 是否对比文件的内容
+  names:
+  - .\dest\            # 第一个是目标文件夹
+  - .\aaa\             # 从第二个开始是源头文件或文件夹
+  - .\file2.txt
+`
+}
+
 func (o *OneWaySync) Refresh() {
 	*o = *new(OneWaySync)
 }
@@ -102,14 +119,14 @@ func (o *OneWaySync) Validate() error {
 
 func (o *OneWaySync) Exec() error {
 	for _, srcName := range o.srcFiles {
-		if err := walk(srcName, o); err != nil {
+		if err := ows_walk(srcName, o); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func walk(srcRoot string, o *OneWaySync) error {
+func ows_walk(srcRoot string, o *OneWaySync) error {
 	return filepath.WalkDir(srcRoot, func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			log.Print("Error in WalkDir")
@@ -117,8 +134,8 @@ func walk(srcRoot string, o *OneWaySync) error {
 		}
 
 		// file 与 folder 都要用到的变量
-		srcBase := filepath.Base(name)
-		targetPath := filepath.Join(o.targetDir, srcBase)
+		// srcBase := filepath.Base(name)
+		targetPath := filepath.Join(o.targetDir, name)
 		notExists, err := util.PathIsNotExist(targetPath)
 		if err != nil {
 			return err
@@ -158,7 +175,12 @@ func walk(srcRoot string, o *OneWaySync) error {
 			}
 			srcTime := srcInfo.ModTime().Format(time.RFC3339)
 			destTime := destInfo.ModTime().Format(time.RFC3339)
-			fmt.Printf("src-date: %s, dest-date: %s", srcTime, destTime)
+			fmt.Printf("src-date: %s, dest-date: ", srcTime)
+			if srcTime == destTime {
+				fmt.Println("same")
+			} else {
+				fmt.Printf("%s\n", destTime)
+			}
 		}
 		return nil
 	})

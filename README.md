@@ -22,11 +22,13 @@ a file/folder processor written in Go
 ## 安装方法
 
 配置好 Go 语言环境后，执行以下命令：
+
 ```
 $ go install github.com/ahui2016/gof@v0.1.0
 ```
 
 如果有网络问题，请设置 goproxy：
+
 ```
 $ go env -w GO111MODULE=on
 $ go env -w GOPROXY=https://goproxy.cn,direct
@@ -35,16 +37,19 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 ## 使用方法
 
 本仓库的源代码里提供了一个 examples 文件夹，下载到本地后在 examples 的各个子文件夹里执行以下命令可试验是否安装成功：
+
 ```
 $ gof -f gof.yaml
 ```
 
 如果在当前文件夹里有一个 gof.yaml 文件, 则可以省略 `-f` 参数。
+
 ```
 $ gof
 ```
 
 可以在 yaml 文件里设定需要处理的文件，也可以用命令行指定，例如：
+
 ```
 $ gof file1.txt file2.txt
 ```
@@ -54,40 +59,74 @@ $ gof file1.txt file2.txt
 如果使用 yaml 文件，可以在文件里设定处理方式(recipe) 并且为每个任务设定不同的 options (上面的示例都使用了 yaml 文件)。
 
 也可以不使用 yaml 文件，通过命令行来指定处理方式(recipe):
+
 ```
 $ gof -r swap file1.txt file2.txt
 ```
 
 使用 yaml 文件可依次执行多个任务，可以设定不同的 options, 而使用参数 `-r` 指定 recipe 则每次只能执行一个任务，并且只能使用默认的 options。
 
-## 任务计划
+### 任务计划
 
 上面 "使用方法" 中的各种命令均可添加参数 `-dump`, 例如：
+
 ```
 $ gof -f gof.yaml -dump
 ```
+
 加了 `-dump` 的命令是安全的，不会真的执行，只会显示任务计划，并且会检查每个任务的参数是否正确。
 
 **注意**: `-dump` 不可跟在被操作的文件名之后，比如下面是**错误**示范
+
 ```
 $ gof -r swap file1.txt file2.txt -dump
 ```
+
 上面的命令中 `-dump` 会被当作文件名，因此正确的命令应该是：
+
 ```
 $ gof -dump -r swap file1.txt file2.txt
 ```
 
 总之，如果通过命令行来指定被操作的文件，那么被指定的一个或多个文件名应该总是在命令的末尾。
 
+### 帮助信息
+
+- 为了让别人，以及未来一段时间之后的作者自己能迅速了解一个 recipe 的用途，建议每个 recipe 都认真实现 Help() 方法。
+
+- 做法也很简单，大多数情况下直接黏贴一个 YAML 再补充一些注释即可，具体请参考项目自带的 recipe (比如 swap.go, one-way-sync.go) 里的 Help() 方法。
+
+- 在命令行，用 `gof -help -r swap` 即可查看关于 swap 的说明。
+
+- 用 `gof -list` 可列出全部已经注册的 recipe。
+
+
+
+### 一个技巧
+
+使用 `-dump` 功能可非常方便地生成一个 YAML 文件，比如：
+
+```
+$ gof -dump -r swap file1.txt file2.txt > gof.yaml
+```
+
+即可生成一个 YAML 文件，这样，只需要对新生成的文件稍作修改，以后就可以在有 gof.yaml 文件的目录里直接执行：
+
+```
+$ gof
+```
+
 ## 关于 go install 和 GOBIN
 
 如果设置了 GOBIN, 那么程序会被安装在 GOBIN 里，需要手动添加目录到环境变量中。
 GOBIN 的具体位置可以用以下命令查看：
+
 ```
 $ go env GOBIN
 ```
 
 如果未设置 GOBIN, 请查看 go install 的帮助信息：
+
 ```
 $ go help install
 ```
