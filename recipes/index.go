@@ -2,10 +2,11 @@ package recipes
 
 import "fmt"
 
+// Recipe 是一个插件的接口，建议先看看 recipes/swap.go 的具体实现，可以帮助快速理解这个接口。
 type Recipe interface {
 
 	// Name of this recipe.
-	// 注意，应返回一个便于命令行输入的名字，比如中间不要有空格。
+	// 注意，应返回一个便于命令行输入的名字，比如中间不要有空格。通常与源码文件名同名即可。
 	Name() string
 
 	// Help messages.
