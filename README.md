@@ -24,7 +24,7 @@ a file/folder processor written in Go
 配置好 Go 语言环境后，执行以下命令：
 
 ```
-$ go install github.com/ahui2016/gof@v0.1.0
+$ go install github.com/ahui2016/gof@v0.2.0
 ```
 
 如果有网络问题，请设置 goproxy：
@@ -42,16 +42,10 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 $ gof -f gof.yaml
 ```
 
-如果在当前文件夹里有一个 gof.yaml 文件, 则可以省略 `-f` 参数。
-
-```
-$ gof
-```
-
 可以在 yaml 文件里设定需要处理的文件，也可以用命令行指定，例如：
 
 ```
-$ gof file1.txt file2.txt
+$ gof -f gof.yaml file1.txt file2.txt
 ```
 
 **注意**: 通过命令行指定文件时，如果 YAML 文件里有多个任务，那么每个任务都会统一采用命令行指定的文件。命令行的优先级比 YAML 文件更高。如果试用 `-dump` 参数（详见后文 "任务计划"），可以看到命令行指定文件相当于设定了 global-names.
@@ -64,7 +58,7 @@ $ gof file1.txt file2.txt
 $ gof -r swap file1.txt file2.txt
 ```
 
-使用 yaml 文件可依次执行多个任务，可以设定不同的 options, 而使用参数 `-r` 指定 recipe 则每次只能执行一个任务，并且只能使用默认的 options。
+使用 yaml 文件可依次执行多个任务，每个任务可分别设定不同的 options, 而使用参数 `-r` 指定 recipe 则每次只能执行一个任务，并且只能使用默认的 options。
 
 ### 任务计划
 
@@ -94,13 +88,11 @@ $ gof -dump -r swap file1.txt file2.txt
 
 - 为了让别人，以及未来一段时间之后的作者自己能迅速了解一个 recipe 的用途，建议每个 recipe 都认真实现 Help() 方法。
 
-- 做法也很简单，大多数情况下直接黏贴一个 YAML 再补充一些注释即可，具体请参考项目自带的 recipe (比如 swap.go, one-way-sync.go) 里的 Help() 方法。
+- 做法也很简单，大多数情况下直接黏贴一个 YAML 文件的内容并补充一些注释即可，具体请参考项目自带的 recipe (比如 swap.go, one-way-sync.go) 里的 Help() 方法。
 
 - 在命令行，用 `gof -help -r swap` 即可查看关于 swap 的说明。
 
 - 用 `gof -list` 可列出全部已经注册的 recipe。
-
-
 
 ### 一个技巧
 
@@ -110,10 +102,10 @@ $ gof -dump -r swap file1.txt file2.txt
 $ gof -dump -r swap file1.txt file2.txt > gof.yaml
 ```
 
-即可生成一个 YAML 文件，这样，只需要对新生成的文件稍作修改，以后就可以在有 gof.yaml 文件的目录里直接执行：
+即可生成一个 YAML 文件，这样，只需要对新生成的文件稍作修改就可以使用：
 
 ```
-$ gof
+$ gof -f gof.yaml
 ```
 
 ## 关于 go install 和 GOBIN

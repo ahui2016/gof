@@ -22,9 +22,7 @@ func initRecipes() error {
 	)
 }
 
-const gofVer = "v0.1.0"
-
-const defaultConfigFileName = "gof.yaml"
+const gofVer = "v0.2.0"
 
 var tasks model.Tasks
 
@@ -69,15 +67,8 @@ func initFlag() {
 		}}}
 	} else {
 		// 如果命令行未指定 recipe, 则需要一个 YAML 文件，
-		// 如果用户未指定 YAML 文件，则尝试寻找默认的 YAML 文件。
 		if strings.TrimSpace(*config) == "" {
-			ok, err := util.PathIsExist(defaultConfigFileName)
-			util.Panic(err)
-			if ok {
-				*config = defaultConfigFileName
-			} else {
-				log.Fatalf("Usage Example:\n    gof -f example.yaml\n    gof -r swap file1 file2")
-			}
+			log.Fatalf("\nUsage Example:\n    gof -f example.yaml\n    gof -r swap file1 file2")
 		}
 		tasksFile, err := os.ReadFile(*config)
 		util.Panic(err)
