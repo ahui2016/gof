@@ -3,8 +3,6 @@
 a file/folder processor written in Go  
 用 Go 语言来写 extension 进行自由定制的文件/文件夹处理器。
 
-暂时只有一个扩展作为示例: swap, 用于对调两个文件的文件名。
-
 纯 Go 语言实现，扩展也是使用 Go 来写，通过添加扩展可对文件/文件夹进行随心所欲的操作，比如：
 
 - 对调两个文件的文件名
@@ -88,7 +86,7 @@ $ gof -dump -r swap file1.txt file2.txt
 
 - 为了让别人，以及未来一段时间之后的作者自己能迅速了解一个 recipe 的用途，建议每个 recipe 都认真实现 Help() 方法。
 
-- 做法也很简单，大多数情况下直接黏贴一个 YAML 文件的内容并补充一些注释即可，具体请参考项目自带的 recipe (比如 swap.go, one-way-sync.go) 里的 Help() 方法。
+- 做法也很简单，大多数情况下直接黏贴一个 YAML 文件的内容并补充一些注释即可，具体请参考项目自带的 recipe (比如 swap.go, one-way-sync.go, move-new-files.go) 里的 Help() 方法。
 
 - 在命令行，用 `gof -help -r swap` 即可查看关于 swap 的说明。
 
