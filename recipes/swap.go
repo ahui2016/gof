@@ -11,7 +11,7 @@ import (
 )
 
 /*
- * 建议每个 Recipe 独立一个文件，并且其常量和函数都添加前缀，
+ * 建议每个 Recipe 独立一个文件，并且其常量应添加前缀，函数应写成私有方法，
  * 因为全部 recipe 都在 package recipes 里面，要避免冲突。
  */
 
@@ -51,24 +51,21 @@ func (s *Swap) Refresh() {
 	*s = *new(Swap)
 }
 
-func (s *Swap) Default() map[string]string {
-	return map[string]string{
+func (s *Swap) Default() Options {
+	return Options{
 		"verbose": "yes",
 	}
 }
 
-func (s *Swap) Prepare(names []string, options map[string]string) {
+func (s *Swap) Prepare(names []string, options Options) {
 	s.names = names
-	s.verbose = options["verbose"] == "yes"
+	s.verbose = yesToBool(options["verbose"])
 }
 
-func (s *Swap) Validate() error {
-	s.names = util.StrSliceFilter(s.names, func(name string) bool {
-		return name != ""
-	})
-	if len(s.names) != 2 {
-		log.Print("filenames: ", s.names)
-		return fmt.Errorf("%s: needs two filenames", s.Name())
+func (s *Swap) Validate() (err error) {
+	s.names, err = namesLimit(s.names, 2, 2)
+	if err != nil {
+		return fmt.Errorf("%s: %w", s.Name(), err)
 	}
 	for i := range s.names {
 		if err := util.FindFile(s.names[i]); err != nil {
@@ -82,7 +79,7 @@ func (s *Swap) Exec() error {
 	if s.verbose {
 		log.Printf("start to swap [%s] and [%s]", s.names[0], s.names[1])
 	}
-	temp, err := swap_tempName(s.names[0])
+	temp, err := s.tempName(s.names[0])
 	if err != nil {
 		return err
 	}
@@ -113,9 +110,9 @@ func (s *Swap) Exec() error {
 	return nil
 }
 
-// swap_addSuffix 给一个文件名添加后缀，使其变成一个临时文件名。
+// addSuffix 给一个文件名添加后缀，使其变成一个临时文件名。
 // 比如 abc.js 处理后应变成 abc1.js
-func swap_addSuffix(name string) string {
+func (s *Swap) addSuffix(name string) string {
 	clean := filepath.Clean(name)
 
 	// 去掉最后一个分隔符，当作文件来处理。
@@ -130,10 +127,10 @@ func swap_addSuffix(name string) string {
 	return filepath.Join(dir, temp)
 }
 
-// swap_tempName 找出一个可用的临时文件名。
-func swap_tempName(name string) (string, error) {
+// tempName 找出一个可用的临时文件名。
+func (s *Swap) tempName(name string) (string, error) {
 	for i := 0; i < swap_limit; i++ {
-		name = swap_addSuffix(name)
+		name = s.addSuffix(name)
 		ok, err := util.PathIsNotExist(name)
 		if err != nil {
 			return "", err

@@ -12,6 +12,11 @@ import (
 	"github.com/ahui2016/gof/util"
 )
 
+/*
+ * 建议每个 Recipe 独立一个文件，并且其常量应添加前缀，函数应写成私有方法，
+ * 因为全部 recipe 都在 package recipes 里面，要避免冲突。
+ */
+
 // OneWaySync 实现了 Recipe 接口，用于单向同步。
 // 把 srcFiles (包括文件和文件夹) 同步到 distFolder,
 // distFolder 里没有的文件就 add, 已有的就对比差异按需 update, 多余的则 delete,
@@ -77,16 +82,16 @@ func (o *OneWaySync) Default() map[string]string {
 // Perpare 初始化一些项目，但 targetDir 与 srcFiles 则需要在 Validate 里初始化。
 func (o *OneWaySync) Prepare(names []string, options map[string]string) {
 	o.names = names
-	o.dryRun = options["dry-run"] == "yes"
-	o.add = options["add"] == "yes"
-	o.update = options["update"] == "yes"
-	o.delete = options["delete"] == "yes"
-	o.byDate = options["by-date"] == "no"
-	o.byContent = options["by-content"] == "yes"
-	o.verbose = options["verbose"] == "yes"
+	o.dryRun = yesToBool(options["dry-run"])
+	o.add = yesToBool(options["add"])
+	o.update = yesToBool(options["update"])
+	o.delete = yesToBool(options["delete"])
+	o.byDate = yesToBool(options["by-date"])
+	o.byContent = yesToBool(options["by-content"])
+	o.verbose = yesToBool(options["verbose"])
 }
 
-func (o *OneWaySync) Validate() error {
+func (o *OneWaySync) Validate() (err error) {
 	// add/update/delete 至少其中一个必须设为 true
 	if !o.add && !o.update && !o.delete {
 		log.Println("warning: add/update/delete are all set to false, nothing will be sync'ed.")
@@ -96,15 +101,9 @@ func (o *OneWaySync) Validate() error {
 		return fmt.Errorf("by-date and by-content are all set to false, nothing to be compare")
 	}
 
-	// 清除空字符串
-	o.names = util.StrSliceFilter(o.names, func(name string) bool {
-		return name != ""
-	})
-
-	// 检查 o.names 的数量
-	if len(o.names) < 2 {
-		log.Print("file/folder names: ", o.names)
-		return fmt.Errorf("%s: needs at least two file/folder names", o.Name())
+	o.names, err = namesLimit(o.names, 2, DefaultMax)
+	if err != nil {
+		return fmt.Errorf("%s: %w", o.Name(), err)
 	}
 
 	// 确保每个文件/文件名都真实存在
@@ -140,7 +139,7 @@ var (
 func (o *OneWaySync) Exec() error {
 	// 处理 add 和 update
 	for _, srcName := range o.srcFiles {
-		if err := ows_walk(srcName, o); err != nil {
+		if err := o.walk(srcName); err != nil {
 			return err
 		}
 	}
@@ -156,7 +155,7 @@ func (o *OneWaySync) Exec() error {
 			return nil
 		}
 		// 跳过父文件夹已被删除的项目
-		if ows_subOfFolders(name, ows_deleted) {
+		if o.subOfFolders(name, ows_deleted) {
 			return nil
 		}
 		srcPath, err := filepath.Rel(o.targetDir, name)
@@ -194,21 +193,21 @@ func (o *OneWaySync) Exec() error {
 		fmt.Println()
 		fmt.Printf("add (%v)\n", o.add)
 		fmt.Println("----------------------")
-		ows_printArray(ows_addList)
+		o.printArray(ows_addList)
 		fmt.Println()
 		fmt.Printf("update (%v)\n", o.update)
 		fmt.Println("----------------------")
-		ows_printArray(ows_updateList)
+		o.printArray(ows_updateList)
 		fmt.Println()
 		fmt.Printf("delete (%v)\n", o.delete)
 		fmt.Println("----------------------")
-		ows_printArray(ows_delList)
+		o.printArray(ows_delList)
 		fmt.Println()
 	}
 	return nil
 }
 
-func ows_walk(srcRoot string, o *OneWaySync) error {
+func (o *OneWaySync) walk(srcRoot string) error {
 	return filepath.WalkDir(srcRoot, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Print("Error in WalkDir")
@@ -229,7 +228,7 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 		// 标记即将添加的文件
 		if notExists {
 			// 父文件夹未被标记为已添加的，才加进 ows_addList 中
-			if !ows_subOfFolders(targetPath, ows_added) {
+			if !o.subOfFolders(targetPath, ows_added) {
 				ows_addList = append(ows_addList, targetPath)
 			}
 			if d.IsDir() {
@@ -249,7 +248,7 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 			}
 			// 如果是文件
 			if notExists {
-				if err := ows_copy_setTime(targetPath, name, srcInfo); err != nil {
+				if err := o.copy_setTime(targetPath, name, srcInfo); err != nil {
 					return err
 				}
 			}
@@ -257,7 +256,7 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 
 		// 更新文件
 		// 不需要对比文件夹，不需要对比不存在的文件，不需要对比新文件夹的内容
-		if d.IsDir() || notExists || ows_subOfFolders(targetPath, ows_added) {
+		if d.IsDir() || notExists || o.subOfFolders(targetPath, ows_added) {
 			return nil
 		}
 		isNeedUpdate := false
@@ -292,7 +291,7 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 			ows_updateList = append(ows_updateList, targetPath)
 			// 实际执行更新文件
 			if !o.dryRun {
-				if err := ows_copy_setTime(targetPath, name, srcInfo); err != nil {
+				if err := o.copy_setTime(targetPath, name, srcInfo); err != nil {
 					return err
 				}
 			}
@@ -301,9 +300,9 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 	})
 }
 
-// ows_subOfFolders 检查 name 是否在 folders 里的任何一个文件夹中。
+// subOfFolders 检查 name 是否在 folders 里的任何一个文件夹中。
 // folders 是被标记为已添加或已删除的文件夹。
-func ows_subOfFolders(name string, folders []string) bool {
+func (o *OneWaySync) subOfFolders(name string, folders []string) bool {
 	for _, folder := range folders {
 		if strings.HasPrefix(name, folder) {
 			return true
@@ -312,7 +311,7 @@ func ows_subOfFolders(name string, folders []string) bool {
 	return false
 }
 
-func ows_printArray(arr []string) {
+func (o *OneWaySync) printArray(arr []string) {
 	if len(arr) == 0 {
 		fmt.Println("(none)")
 		return
@@ -322,7 +321,7 @@ func ows_printArray(arr []string) {
 	}
 }
 
-func ows_copy_setTime(dest, src string, info fs.FileInfo) error {
+func (o *OneWaySync) copy_setTime(dest, src string, info fs.FileInfo) error {
 	if err := util.CopyFile(dest, src); err != nil {
 		return err
 	}

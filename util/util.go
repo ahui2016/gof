@@ -112,3 +112,11 @@ func CopyFile(destPath, sourcePath string) error {
 	err2 := outputFile.Sync()
 	return WrapErrors(err1, err2)
 }
+
+// IntMin computes the minimum of the two int args
+func IntMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

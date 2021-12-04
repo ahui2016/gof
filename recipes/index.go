@@ -1,6 +1,16 @@
 package recipes
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/ahui2016/gof/util"
+)
+
+const DefaultMax = 9999 // 默认处理文件数量的上限
+
+type Options = map[string]string
 
 // Recipe 是一个插件的接口，建议先看看 recipes/swap.go 的具体实现，可以帮助快速理解这个接口。
 type Recipe interface {
@@ -18,11 +28,11 @@ type Recipe interface {
 	Refresh()
 
 	// Default 返回默认的 options
-	Default() map[string]string
+	Default() Options
 
 	// 在 Prepare 里进行一些初始化，为后续的 Validate 和 Exec 做准备。
 	// 但由于有些参数需要检查后才能初始化（避免 panic），因此一部分初始化要放在 Validate 里实施。
-	Prepare(names []string, options map[string]string)
+	Prepare(names []string, options Options)
 
 	// 必须先执行 Prepare 然后才执行 Validate.
 	// 注意: 在 Validate 只能读取文件信息，不可修改文件，包括文件内容、日期、权限等等任何修改都不允许。
@@ -44,4 +54,30 @@ func Register(recipes ...Recipe) error {
 		Get[recipe.Name()] = recipe
 	}
 	return nil
+}
+
+// namesLimit 清除 names 里的空字符串，并且限定其上下限。
+func namesLimit(names []string, min, max int) ([]string, error) {
+	names = util.StrSliceFilter(names, func(name string) bool {
+		return name != ""
+	})
+	var err error
+	size := len(names)
+	if min == max && size != min {
+		err = fmt.Errorf("needs exactly %d filenames", min)
+	} else if size < min {
+		err = fmt.Errorf("filenames.length < min(%d)", min)
+	} else if size > max {
+		err = fmt.Errorf("filenames.length > max(%d)", max)
+	}
+	if err != nil {
+		log.Println("filenames:", names)
+		return nil, err
+	}
+	return names, nil
+}
+
+// yesToBool return true if yes is yes, case-insensitive.
+func yesToBool(yes string) bool {
+	return strings.ToLower(yes) == "yes"
 }
