@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ahui2016/gof/util"
@@ -27,6 +28,7 @@ type OneWaySync struct {
 	delete    bool
 	byDate    bool
 	byContent bool
+	verbose   bool
 }
 
 func (o *OneWaySync) Name() string {
@@ -44,6 +46,7 @@ func (o *OneWaySync) Help() string {
     delete: "no"       # 是否删除文件
     by-date: "yes"     # 是否对比文件的修改日期
     by-content: "yes"  # 是否对比文件的内容
+    verbose: "yes"     # 如果设为 no, 则在实际执行后不会显示详细信息
   names:
   - .\dest\            # 第一个是目标文件夹
   - .\folder\          # 从第二个开始是源头文件或文件夹
@@ -67,6 +70,7 @@ func (o *OneWaySync) Default() map[string]string {
 		"delete":     "no",
 		"by-date":    "no",
 		"by-content": "yes",
+		"verbose":    "yes",
 	}
 }
 
@@ -77,8 +81,9 @@ func (o *OneWaySync) Prepare(names []string, options map[string]string) {
 	o.add = options["add"] == "yes"
 	o.update = options["update"] == "yes"
 	o.delete = options["delete"] == "yes"
-	o.byDate = options["by-date"] == "yes"
+	o.byDate = options["by-date"] == "no"
 	o.byContent = options["by-content"] == "yes"
+	o.verbose = options["verbose"] == "yes"
 }
 
 func (o *OneWaySync) Validate() error {
@@ -125,10 +130,11 @@ func (o *OneWaySync) Validate() error {
 }
 
 var (
-	ows_addList    []string
-	ows_updateList []string
-	ows_delList    []string
-	ows_deleted    []string
+	ows_addList    []string // 用于 dryRun 显示将要添加的内容
+	ows_updateList []string // 用于 dryRun 显示将要更新的内容
+	ows_delList    []string // 用于 dryRun 显示将要删除的内容
+	ows_added      []string // 标记为已新增的文件夹（用来跳过处理这些文件夹的内容）
+	ows_deleted    []string // 标记为已删除的文件夹（用来跳过处理这些文件夹的内容）
 )
 
 func (o *OneWaySync) Exec() error {
@@ -138,8 +144,9 @@ func (o *OneWaySync) Exec() error {
 			return err
 		}
 	}
+
 	// 处理 delete
-	return filepath.WalkDir(o.targetDir, func(name string, d fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(o.targetDir, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Print("Error in WalkDir")
 			return err
@@ -149,15 +156,8 @@ func (o *OneWaySync) Exec() error {
 			return nil
 		}
 		// 跳过父文件夹已被删除的项目
-		if util.StrIndex(ows_deleted, name) >= 0 {
+		if ows_subOfFolders(name, ows_deleted) {
 			return nil
-		}
-		if d.IsDir() {
-			deleted, err := filepath.Glob(name + "*")
-			if err != nil {
-				return err
-			}
-			ows_deleted = append(ows_deleted, deleted...)
 		}
 		srcPath, err := filepath.Rel(o.targetDir, name)
 		if err != nil {
@@ -169,15 +169,43 @@ func (o *OneWaySync) Exec() error {
 		}
 		// 不存在于源头目录中的文件需要删除
 		if notExist {
-			if o.dryRun {
-				ows_delList = append(ows_delList, name)
-			} else {
+			// 标记需要删除的文件或文件夹
+			ows_delList = append(ows_delList, name)
+			// 把文件夹标记为已删除，以便跳过处理其内容
+			if d.IsDir() {
+				ows_deleted = append(ows_deleted, name)
+			}
+			// 实际删除文件或文件夹
+			if !o.dryRun {
 				return os.RemoveAll(name)
 			}
-			fmt.Printf("Delete: %s\n", name)
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	// 显示执行结果
+	if o.dryRun {
+		fmt.Println()
+		fmt.Printf("**It's a dry run, not a real run.**\n")
+	}
+	if o.dryRun || o.verbose {
+		fmt.Println()
+		fmt.Printf("add (%v)\n", o.add)
+		fmt.Println("----------------------")
+		ows_printArray(ows_addList)
+		fmt.Println()
+		fmt.Printf("update (%v)\n", o.update)
+		fmt.Println("----------------------")
+		ows_printArray(ows_updateList)
+		fmt.Println()
+		fmt.Printf("delete (%v)\n", o.delete)
+		fmt.Println("----------------------")
+		ows_printArray(ows_delList)
+		fmt.Println()
+	}
+	return nil
 }
 
 func ows_walk(srcRoot string, o *OneWaySync) error {
@@ -192,11 +220,24 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 		if err != nil {
 			return err
 		}
+		srcInfo, err := d.Info()
+		if err != nil {
+			return err
+		}
 
 		// 新增文件
-		if o.dryRun {
-			ows_addList = append(ows_addList, targetPath)
-		} else {
+		// 标记即将添加的文件
+		if notExists {
+			// 父文件夹未被标记为已添加的，才加进 ows_addList 中
+			if !ows_subOfFolders(targetPath, ows_added) {
+				ows_addList = append(ows_addList, targetPath)
+			}
+			if d.IsDir() {
+				ows_added = append(ows_added, targetPath)
+			}
+		}
+		// 实际执行复制文件
+		if !o.dryRun {
 			// 如果是文件夹
 			if d.IsDir() {
 				if notExists {
@@ -208,30 +249,27 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 			}
 			// 如果是文件
 			if notExists {
-				_, err := os.Create(targetPath)
-				return err
+				if err := ows_copy_setTime(targetPath, name, srcInfo); err != nil {
+					return err
+				}
 			}
 		}
 
 		// 更新文件
+		// 不需要对比文件夹，不需要对比不存在的文件，不需要对比新文件夹的内容
+		if d.IsDir() || notExists || ows_subOfFolders(targetPath, ows_added) {
+			return nil
+		}
 		isNeedUpdate := false
-		isTimeDiff := false
-		isContentDiff := false
+		destInfo, err := os.Lstat(targetPath)
+		if err != nil {
+			return err
+		}
 
 		// 对比日期
 		if o.byDate {
-			srcInfo, err := d.Info()
-			if err != nil {
-				return err
-			}
-			destInfo, err := os.Lstat(targetPath)
-			if err != nil {
-				return err
-			}
-			srcTime := srcInfo.ModTime().Format(time.RFC3339)
-			destTime := destInfo.ModTime().Format(time.RFC3339)
-			if srcTime != destTime {
-				isTimeDiff = true
+			if srcInfo.ModTime() != destInfo.ModTime() {
+				isNeedUpdate = true
 			}
 		}
 		// 对比内容
@@ -245,26 +283,48 @@ func ows_walk(srcRoot string, o *OneWaySync) error {
 				return err
 			}
 			if srcSum != destSum {
-				isContentDiff = true
+				isNeedUpdate = true
 			}
 		}
 
-		if o.byDate && o.byContent {
-			if isTimeDiff && isContentDiff {
-				isNeedUpdate = true
-			}
-		} else {
-			if isTimeDiff || isContentDiff {
-				isNeedUpdate = true
-			}
-		}
 		if isNeedUpdate {
-			if o.dryRun {
-				ows_updateList = append(ows_updateList, targetPath)
-			} else {
-				return util.CopyFile(targetPath, name)
+			// 标记即将更新的文件
+			ows_updateList = append(ows_updateList, targetPath)
+			// 实际执行更新文件
+			if !o.dryRun {
+				if err := ows_copy_setTime(targetPath, name, srcInfo); err != nil {
+					return err
+				}
 			}
 		}
 		return nil
 	})
+}
+
+// ows_subOfFolders 检查 name 是否在 folders 里的任何一个文件夹中。
+// folders 是被标记为已添加或已删除的文件夹。
+func ows_subOfFolders(name string, folders []string) bool {
+	for _, folder := range folders {
+		if strings.HasPrefix(name, folder) {
+			return true
+		}
+	}
+	return false
+}
+
+func ows_printArray(arr []string) {
+	if len(arr) == 0 {
+		fmt.Println("(none)")
+		return
+	}
+	for i := range arr {
+		fmt.Println(arr[i])
+	}
+}
+
+func ows_copy_setTime(dest, src string, info fs.FileInfo) error {
+	if err := util.CopyFile(dest, src); err != nil {
+		return err
+	}
+	return os.Chtimes(dest, time.Now(), info.ModTime())
 }

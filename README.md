@@ -134,7 +134,7 @@ $ go help install
 
 完成。
 
-最后可以 go install 你自己定制版本的 gof
+最后，在你修改过的 gof 本地源码文件夹里，执行 `go install` 即可安装你自己定制版本的 gof
 
 ## 温馨提示
 
