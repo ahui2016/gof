@@ -23,7 +23,7 @@ func initRecipes() error {
 	)
 }
 
-const gofVer = "v0.2.0"
+const gofVer = "v0.2.1"
 
 var tasks model.Tasks
 

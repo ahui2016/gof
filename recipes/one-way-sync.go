@@ -145,7 +145,37 @@ func (o *OneWaySync) Exec() error {
 	}
 
 	// 处理 delete
-	if err := filepath.WalkDir(o.targetDir, func(name string, d fs.DirEntry, err error) error {
+	if o.delete {
+		if err := o.walkDelete(); err != nil {
+			return err
+		}
+	}
+
+	// 显示执行结果
+	if o.dryRun {
+		fmt.Println()
+		fmt.Printf("**It's a dry run, not a real run.**\n")
+	}
+	if o.dryRun || o.verbose {
+		fmt.Println()
+		fmt.Printf("add (%v)\n", o.add)
+		fmt.Println("----------------------")
+		o.printArray(ows_addList)
+		fmt.Println()
+		fmt.Printf("update (%v)\n", o.update)
+		fmt.Println("----------------------")
+		o.printArray(ows_updateList)
+		fmt.Println()
+		fmt.Printf("delete (%v)\n", o.delete)
+		fmt.Println("----------------------")
+		o.printArray(ows_delList)
+		fmt.Println()
+	}
+	return nil
+}
+
+func (o *OneWaySync) walkDelete() error {
+	return filepath.WalkDir(o.targetDir, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Print("Error in WalkDir")
 			return err
@@ -180,35 +210,11 @@ func (o *OneWaySync) Exec() error {
 			}
 		}
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	// 显示执行结果
-	if o.dryRun {
-		fmt.Println()
-		fmt.Printf("**It's a dry run, not a real run.**\n")
-	}
-	if o.dryRun || o.verbose {
-		fmt.Println()
-		fmt.Printf("add (%v)\n", o.add)
-		fmt.Println("----------------------")
-		o.printArray(ows_addList)
-		fmt.Println()
-		fmt.Printf("update (%v)\n", o.update)
-		fmt.Println("----------------------")
-		o.printArray(ows_updateList)
-		fmt.Println()
-		fmt.Printf("delete (%v)\n", o.delete)
-		fmt.Println("----------------------")
-		o.printArray(ows_delList)
-		fmt.Println()
-	}
-	return nil
+	})
 }
 
-func (o *OneWaySync) walk(srcRoot string) error {
-	return filepath.WalkDir(srcRoot, func(name string, d fs.DirEntry, err error) error {
+func (o *OneWaySync) walk(root string) error {
+	return filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Print("Error in WalkDir")
 			return err
