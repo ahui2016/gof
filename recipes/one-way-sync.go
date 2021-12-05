@@ -145,10 +145,8 @@ func (o *OneWaySync) Exec() error {
 	}
 
 	// 处理 delete
-	if o.delete {
-		if err := o.walkDelete(); err != nil {
-			return err
-		}
+	if err := o.walkDelete(); err != nil {
+		return err
 	}
 
 	// 显示执行结果
