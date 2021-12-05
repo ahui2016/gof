@@ -1,0 +1,15 @@
+global-names:
+- ..\dest\
+- .\aaa\
+- .\file1.txt
+all-tasks:
+- recipe: one-way-sync
+  options:
+    add: "yes"
+    by-content: "yes"
+    by-date: "no"
+    delete: "no"
+    dry-run: yes
+    update: "yes"
+    verbose: "yes"
+  names: []
