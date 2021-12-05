@@ -3,6 +3,8 @@
 a file/folder processor written in Go  
 用 Go 语言来写 extension 进行自由定制的文件/文件夹处理器。
 
+带截图的说明： [screenshots.md](screenshots.md)
+
 纯 Go 语言实现，扩展也是使用 Go 来写，通过添加扩展可对文件/文件夹进行随心所欲的操作，比如：
 
 - 对调两个文件的文件名
