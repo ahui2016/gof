@@ -205,7 +205,7 @@ func (o *OneWaySync) walkDelete() error {
 				ows_deleted = append(ows_deleted, name)
 			}
 			// 实际删除文件或文件夹
-			if !o.dryRun {
+			if !o.dryRun && o.delete {
 				return os.RemoveAll(name)
 			}
 		}
@@ -242,7 +242,7 @@ func (o *OneWaySync) walk(root string) error {
 			}
 		}
 		// 实际执行复制文件
-		if !o.dryRun {
+		if !o.dryRun && o.add {
 			// 如果是文件夹
 			if d.IsDir() {
 				if notExists {
@@ -296,7 +296,7 @@ func (o *OneWaySync) walk(root string) error {
 			// 标记即将更新的文件
 			ows_updateList = append(ows_updateList, targetPath)
 			// 实际执行更新文件
-			if !o.dryRun {
+			if !o.dryRun && o.update {
 				if err := o.copy_setTime(targetPath, name, srcInfo); err != nil {
 					return err
 				}
